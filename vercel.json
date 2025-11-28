@@ -15,10 +15,7 @@
       "dest": "/index.html"
     }
   ]
-  {
+{
   "$schema": "https://openapi.vercel.sh/vercel.json"
-  "buildCommand": "next build"
-  "bunVersion": "1.x"
-  "cleanUrls": true
 }
 }

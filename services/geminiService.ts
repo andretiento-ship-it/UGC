@@ -44,29 +44,30 @@ export const planCampaign = async (
   const ai = getClient();
   const base64Image = await fileToGenerativePart(imageFile);
 
-  const modelPrompt = settings.modelType === 'Custom' 
+  const modelPrompt = settings.modelType === 'Custom (Spesifik)' && settings.customModelDescription
     ? settings.customModelDescription 
     : `A generic ${settings.modelType} model suitable for this product`;
 
   const prompt = `
-    You are a world-class Marketing Creative Director. 
-    I have a product: "${settings.productName}".
-    Description: "${settings.productDescription}".
-    
-    My target model preference is: ${modelPrompt}.
+    Anda adalah Direktur Kreatif Pemasaran Kelas Dunia.
+    Produk: "${settings.productName}".
+    Deskripsi: "${settings.productDescription}".
+    Target Model: ${modelPrompt}.
 
-    Task 1: Analyze the uploaded product image. Create a detailed visual description of a SINGLE human model (Physical features, hair, clothing style) that fits the brand perfectly. This description will be used to keep the model consistent across multiple AI generated images.
-    
-    Task 2: Create 9 distinct marketing visual concepts (scenarios) for this product. 
-    Examples: Holding the product, using the product, lifestyle shot with product, close-up with model in background, flatlay with model's hand, etc.
-    Ensure diversity in angles and framing (close-up, medium shot, wide shot).
+    Tugas 1: Analisis gambar produk. Buat deskripsi visual detil dalam BAHASA INDONESIA untuk SATU model manusia (Ciri fisik, gaya rambut, pakaian) yang sangat cocok dengan brand ini. Deskripsi ini akan digunakan untuk menjaga konsistensi model di 9 gambar AI.
 
-    Task 3: Write a short, punchy marketing script (Copywriting) following this exact structure:
-    - Hook (Problem): Grab attention immediately.
-    - Intro (Solution): Introduce the product as the fix.
-    - CTA (Agitation): Tell them what to do next with urgency.
+    Tugas 2: Buat 9 konsep visual pemasaran (skenario) yang berbeda untuk produk ini dalam BAHASA INDONESIA.
+    Contoh: Memegang produk, menggunakan produk, foto gaya hidup, close-up, flatlay dengan tangan model, dll. Pastikan ada variasi angle (close-up, medium shot, wide shot).
+
+    Tugas 3: Tulis naskah pemasaran (Copywriting) dalam BAHASA INDONESIA.
+    Gaya Bahasa: ${settings.copywritingStyle}.
+    Metode: Gunakan pendekatan STORYTELLING (Bercerita). Jangan jualan langsung (hard selling), tapi bangun narasi.
+    Struktur Wajib:
+    - Hook (Masalah/Pemicu Cerita): Kalimat pembuka yang menarik perhatian, memulai cerita atau masalah.
+    - Intro (Solusi/Jembatan Cerita): Memperkenalkan produk sebagai bagian dari cerita atau solusi.
+    - CTA (Agitasi/Akhir Cerita): Ajakan bertindak yang mendesak namun tetap dalam alur cerita.
     
-    Return the response in JSON format.
+    Kembalikan respon dalam format JSON.
   `;
 
   const response = await ai.models.generateContent({
@@ -84,7 +85,7 @@ export const planCampaign = async (
         properties: {
           modelDescription: {
             type: Type.STRING,
-            description: "Detailed visual description of the consistent model to be used."
+            description: "Deskripsi visual detil model yang konsisten dalam Bahasa Indonesia."
           },
           scenarios: {
             type: Type.ARRAY,
@@ -92,18 +93,18 @@ export const planCampaign = async (
               type: Type.OBJECT,
               properties: {
                 id: { type: Type.INTEGER },
-                title: { type: Type.STRING, description: "Short title of the scenario (e.g. 'Lifestyle Shot')" },
-                prompt: { type: Type.STRING, description: "Specific instruction for the image generator focusing on the action and pose." }
+                title: { type: Type.STRING, description: "Judul singkat skenario (misal 'Foto Lifestyle') dalam Bahasa Indonesia." },
+                prompt: { type: Type.STRING, description: "Instruksi spesifik untuk generator gambar fokus pada aksi dan pose (Boleh English agar akurat, atau Indonesia)." }
               }
             }
           },
           copywriting: {
             type: Type.OBJECT,
             properties: {
-              hook: { type: Type.STRING, description: "The problem statement/hook." },
-              intro: { type: Type.STRING, description: "The solution/introduction." },
-              cta: { type: Type.STRING, description: "The call to action." },
-              fullText: { type: Type.STRING, description: "The complete script combined." }
+              hook: { type: Type.STRING, description: "Hook cerita/masalah (Storytelling)." },
+              intro: { type: Type.STRING, description: "Intro solusi/produk (Storytelling)." },
+              cta: { type: Type.STRING, description: "Call to Action/Penutup cerita." },
+              fullText: { type: Type.STRING, description: "Naskah lengkap digabung." }
             }
           }
         }
@@ -113,7 +114,7 @@ export const planCampaign = async (
 
   const text = response.text;
   if (!text) {
-    throw new Error("Failed to generate campaign plan.");
+    throw new Error("Gagal membuat rencana kampanye.");
   }
 
   // Clean potentially malformed JSON (remove markdown code blocks)
@@ -123,7 +124,7 @@ export const planCampaign = async (
     return JSON.parse(cleanedText) as CampaignPlan;
   } catch (e) {
     console.error("Failed to parse JSON", e, cleanedText);
-    throw new Error("Failed to parse campaign plan JSON.");
+    throw new Error("Gagal membaca respons JSON dari AI.");
   }
 };
 
@@ -136,17 +137,21 @@ export const regenerateCopywriting = async (
   const ai = getClient();
   
   const prompt = `
-    You are a world-class Marketing Creative Director. 
-    Product: "${settings.productName}".
-    Description: "${settings.productDescription}".
+    Anda adalah Direktur Kreatif Pemasaran Kelas Dunia. 
+    Produk: "${settings.productName}".
+    Deskripsi: "${settings.productDescription}".
     Model Archetype: "${settings.modelType}".
 
-    Task: Write a fresh, short, punchy marketing script (Copywriting) following this exact structure:
-    - Hook (Problem): Grab attention immediately.
-    - Intro (Solution): Introduce the product as the fix.
-    - CTA (Agitation): Tell them what to do next with urgency.
+    Tugas: Tulis ulang naskah pemasaran (Copywriting) yang segar dalam BAHASA INDONESIA.
+    Gaya Bahasa: ${settings.copywritingStyle}.
+    Metode: Gunakan pendekatan STORYTELLING (Bercerita) yang kuat. Hindari bahasa iklan yang kaku. Buatlah seperti seseorang sedang bercerita kepada teman.
     
-    Return the response in JSON format.
+    Struktur Wajib:
+    - Hook (Masalah/Pemicu Cerita): Awal cerita yang relatable atau mengejutkan.
+    - Intro (Solusi/Jembatan Cerita): Bagaimana produk masuk ke dalam cerita tersebut.
+    - CTA (Agitasi/Akhir Cerita): Kesimpulan cerita dan ajakan bertindak.
+    
+    Kembalikan respon dalam format JSON.
   `;
 
   const response = await ai.models.generateContent({
@@ -167,13 +172,13 @@ export const regenerateCopywriting = async (
   });
 
   const text = response.text;
-  if (!text) throw new Error("Failed to regenerate copywriting.");
+  if (!text) throw new Error("Gagal regenerasi copywriting.");
 
   const cleanedText = text.replace(/```json\n?|```/g, '').trim();
   try {
     return JSON.parse(cleanedText) as Copywriting;
   } catch (e) {
-    throw new Error("Failed to parse copywriting JSON.");
+    throw new Error("Gagal parsing copywriting JSON.");
   }
 };
 
@@ -228,7 +233,7 @@ export const generateMarketingImage = async (
   }
 
   if (!finalUrl) {
-    throw new Error("No image generated.");
+    throw new Error("Gambar tidak terbentuk.");
   }
 
   return finalUrl;
@@ -255,7 +260,7 @@ export const generateSpeech = async (text: string, voiceName: VoiceName, speed: 
 
   const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
   if (!base64Audio) {
-    throw new Error("Failed to generate audio.");
+    throw new Error("Gagal membuat audio.");
   }
 
   // Convert Base64 string to Float32Array PCM for processing

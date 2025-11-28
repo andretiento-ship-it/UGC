@@ -5,11 +5,21 @@ export enum AspectRatio {
 }
 
 export enum ModelType {
-  FEMALE = "Female",
-  MALE = "Male",
-  ADULT = "Adult (Any)",
-  CHILD = "Child",
-  CUSTOM = "Custom"
+  FEMALE = "Wanita",
+  MALE = "Pria",
+  ADULT = "Dewasa (Umum)",
+  CHILD = "Anak-anak",
+  CUSTOM = "Custom (Spesifik)"
+}
+
+export enum CopywritingStyle {
+  STORYTELLING_EMOTIONAL = "Storytelling Emosional (Menyentuh Hati)",
+  STORYTELLING_HUMOR = "Storytelling Humoris (Lucu & Santai)",
+  STORYTELLING_THRILLER = "Storytelling Dramatis (Tegang/Serius)",
+  STORYTELLING_INSPIRING = "Storytelling Inspiratif (Motivasi)",
+  STORYTELLING_CASUAL = "Storytelling Gaul (Bahasa Sehari-hari)",
+  PROFESSIONAL = "Profesional & Berwibawa",
+  DIRECT = "To-The-Point (Langsung)"
 }
 
 export interface GenerationSettings {
@@ -18,6 +28,7 @@ export interface GenerationSettings {
   modelType: ModelType;
   customModelDescription?: string;
   aspectRatio: AspectRatio;
+  copywritingStyle: CopywritingStyle;
 }
 
 export interface Copywriting {
@@ -46,18 +57,18 @@ export interface GeneratedAsset {
 
 // 12 Marketing Personas mapping to the 5 core Gemini voices
 export const VOICES = [
-  { name: 'Kore', label: 'The Guide', gender: 'Female', style: 'Relaxed & Warm' },
-  { name: 'Puck', label: 'The Hype', gender: 'Male', style: 'Energetic & Fast' },
-  { name: 'Charon', label: 'The Authority', gender: 'Male', style: 'Deep & Trusted' },
-  { name: 'Fenrir', label: 'The Intense', gender: 'Male', style: 'Cinematic & Bold' },
-  { name: 'Zephyr', label: 'The Soother', gender: 'Female', style: 'Soft & ASMR' },
-  { name: 'Kore', label: 'The Professional', gender: 'Female', style: 'Crisp & Clear' }, // Reusing Kore
-  { name: 'Puck', label: 'The Buddy', gender: 'Male', style: 'Friendly & Casual' }, // Reusing Puck
-  { name: 'Charon', label: 'The Narrator', gender: 'Male', style: 'Storyteller' }, // Reusing Charon
-  { name: 'Zephyr', label: 'The Elegant', gender: 'Female', style: 'Luxury & Slow' }, // Reusing Zephyr
-  { name: 'Fenrir', label: 'The Impact', gender: 'Male', style: 'Punchy & Strong' }, // Reusing Fenrir
-  { name: 'Kore', label: 'The Mom', gender: 'Female', style: 'Caring & Trust' }, // Reusing Kore
-  { name: 'Puck', label: 'The Gamer', gender: 'Male', style: 'Excited & Young' } // Reusing Puck
+  { name: 'Kore', label: 'Sang Pemandu', gender: 'Wanita', style: 'Santai & Hangat' },
+  { name: 'Puck', label: 'Si Hype', gender: 'Pria', style: 'Energik & Cepat' },
+  { name: 'Charon', label: 'Sang Otoritas', gender: 'Pria', style: 'Berat & Terpercaya' },
+  { name: 'Fenrir', label: 'Si Intens', gender: 'Pria', style: 'Sinematik & Tegas' },
+  { name: 'Zephyr', label: 'Si Penenang', gender: 'Wanita', style: 'Lembut & ASMR' },
+  { name: 'Kore', label: 'Si Profesional', gender: 'Wanita', style: 'Jelas & Lugas' }, 
+  { name: 'Puck', label: 'Si Bestie', gender: 'Pria', style: 'Ramah & Gaul' }, 
+  { name: 'Charon', label: 'Sang Narator', gender: 'Pria', style: 'Penceria Cerita' }, 
+  { name: 'Zephyr', label: 'Si Elegan', gender: 'Wanita', style: 'Mewah & Lambat' }, 
+  { name: 'Fenrir', label: 'Si Dampak', gender: 'Pria', style: 'Kuat & Menghentak' }, 
+  { name: 'Kore', label: 'Ibu Penyayang', gender: 'Wanita', style: 'Peduli & Tulus' }, 
+  { name: 'Puck', label: 'Si Gamer', gender: 'Pria', style: 'Seru & Muda' } 
 ] as const;
 
 export type VoiceName = typeof VOICES[number]['name'];

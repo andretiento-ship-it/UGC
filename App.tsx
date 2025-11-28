@@ -2,26 +2,31 @@ import React, { useState } from 'react';
 import Layout from './components/Layout';
 import InputSection from './components/InputSection';
 import Gallery from './components/Gallery';
-import { GenerationSettings, GeneratedAsset, CampaignPlan } from './types';
-import { planCampaign, generateMarketingImage } from './services/geminiService';
+import CopywritingSection from './components/CopywritingSection';
+import { GenerationSettings, GeneratedAsset, CampaignPlan, Copywriting } from './types';
+import { planCampaign, generateMarketingImage, regenerateCopywriting } from './services/geminiService';
 
 const App: React.FC = () => {
   const [isPlanning, setIsPlanning] = useState(false);
   const [assets, setAssets] = useState<GeneratedAsset[]>([]);
   const [currentSettings, setCurrentSettings] = useState<GenerationSettings | null>(null);
   const [modelDescription, setModelDescription] = useState<string>('');
+  const [copywriting, setCopywriting] = useState<Copywriting | null>(null);
+  const [isRegeneratingCopy, setIsRegeneratingCopy] = useState(false);
 
   const handleGenerate = async (file: File, settings: GenerationSettings) => {
     setIsPlanning(true);
     setAssets([]);
+    setCopywriting(null);
     setCurrentSettings(settings);
     setModelDescription('');
 
     try {
-      // 1. Plan the campaign (Analyze image + Create Scenarios)
+      // 1. Plan the campaign (Analyze image + Create Scenarios + Copywriting)
       const plan: CampaignPlan = await planCampaign(file, settings);
       
       setModelDescription(plan.modelDescription);
+      setCopywriting(plan.copywriting);
       
       // Initialize placeholder assets
       const initialAssets: GeneratedAsset[] = plan.scenarios.map(s => ({
@@ -33,10 +38,9 @@ const App: React.FC = () => {
       setAssets(initialAssets);
       setIsPlanning(false);
 
-      // 2. Generate Images Sequentially to update UI progressively
-      // We do this via a loop to manage state updates clearly
-      for (const scenario of plan.scenarios) {
-        // Mark current as generating
+      // 2. Generate Images in PARALLEL
+      const generatePromises = plan.scenarios.map(async (scenario) => {
+        // Mark as generating
         setAssets(prev => prev.map(a => 
           a.id === scenario.id ? { ...a, status: 'generating' } : a
         ));
@@ -49,21 +53,41 @@ const App: React.FC = () => {
             settings.aspectRatio
           );
 
+          // Mark as completed
           setAssets(prev => prev.map(a => 
             a.id === scenario.id ? { ...a, imageUrl, status: 'completed' } : a
           ));
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Failed to generate scenario ${scenario.id}`, error);
+          
           setAssets(prev => prev.map(a => 
             a.id === scenario.id ? { ...a, status: 'failed' } : a
           ));
         }
-      }
+      });
 
-    } catch (error) {
+      // Wait for all to finish (UI updates individually via state setters above)
+      await Promise.all(generatePromises);
+
+    } catch (error: any) {
       console.error("Campaign planning failed", error);
-      alert("Failed to plan the campaign. Please check your API key or try a different image.");
       setIsPlanning(false);
+
+      alert("Failed to plan the campaign. Please check your image and try again.");
+    }
+  };
+
+  const handleRegenerateCopy = async () => {
+    if (!currentSettings) return;
+    setIsRegeneratingCopy(true);
+    try {
+      const newCopy = await regenerateCopywriting(currentSettings);
+      setCopywriting(newCopy);
+    } catch (error) {
+      console.error("Failed to regenerate copy", error);
+      alert("Failed to regenerate copywriting.");
+    } finally {
+      setIsRegeneratingCopy(false);
     }
   };
 
@@ -82,11 +106,21 @@ const App: React.FC = () => {
         <InputSection onGenerate={handleGenerate} isProcessing={isPlanning} />
         
         {currentSettings && (
-          <Gallery 
-            assets={assets} 
-            aspectRatio={currentSettings.aspectRatio}
-            modelDescription={modelDescription}
-          />
+          <div className="space-y-12">
+            <Gallery 
+              assets={assets} 
+              aspectRatio={currentSettings.aspectRatio}
+              modelDescription={modelDescription}
+            />
+            
+            {copywriting && (
+              <CopywritingSection 
+                copywriting={copywriting} 
+                onRegenerate={handleRegenerateCopy}
+                isRegenerating={isRegeneratingCopy}
+              />
+            )}
+          </div>
         )}
       </div>
     </Layout>

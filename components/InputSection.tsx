@@ -25,11 +25,14 @@ const InputSection: React.FC<InputSectionProps> = ({ onGenerate, isProcessing })
       const items = e.clipboardData?.items;
       if (!items) return;
 
-      for (const item of items) {
-        if (item.type.indexOf('image') !== -1) {
-          const blob = item.getAsFile();
-          if (blob) handleFileSelect(blob);
-          break;
+      // Use standard for loop for better compatibility with DataTransferItemList
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            handleFileSelect(blob);
+            break; // Stop after finding the first image
+          }
         }
       }
     };
@@ -39,16 +42,42 @@ const InputSection: React.FC<InputSectionProps> = ({ onGenerate, isProcessing })
   }, []);
 
   const handleFileSelect = (selectedFile: File) => {
-    setFile(selectedFile);
+    // CRITICAL FIX: Guard against undefined/null files or invalid objects
+    if (!selectedFile) return;
+    
+    // Ensure it is actually a Blob/File object to prevent FileReader errors
+    if (!(selectedFile instanceof Blob)) {
+      console.error("Selected item is not a valid File or Blob object.");
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onloadend = () => setPreview(reader.result as string);
+    reader.onloadend = () => {
+      if (reader.result) {
+        setPreview(reader.result as string);
+        // Only set file state if read was successful
+        setFile(selectedFile);
+      }
+    };
     reader.readAsDataURL(selectedFile);
   };
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFileSelect(e.dataTransfer.files[0]);
+    } else if (e.dataTransfer.items) {
+      // Fallback for some drag types
+      const items = e.dataTransfer.items;
+      for (let i = 0; i < items.length; i++) {
+         if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+            const f = items[i].getAsFile();
+            if (f) {
+                handleFileSelect(f);
+                break;
+            }
+         }
+      }
     }
   };
 
@@ -92,7 +121,12 @@ const InputSection: React.FC<InputSectionProps> = ({ onGenerate, isProcessing })
           <input
             type="file"
             ref={fileInputRef}
-            onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+            onChange={(e) => {
+              // CRITICAL FIX: Check if files exist and has length
+              if (e.target.files && e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+              }
+            }}
             className="hidden"
             accept="image/*"
           />

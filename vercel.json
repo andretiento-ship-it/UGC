@@ -15,7 +15,4 @@
       "dest": "/index.html"
     }
   ]
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json"
-}
 }
